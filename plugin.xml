@@ -33,5 +33,7 @@
 
         <header-file src="src/ios/GSUserAgent.h" />
         <source-file src="src/ios/GSUserAgent.m" />
+        <header-file src="src/ios/GSUserAgentProtocol.h" />
+        <source-file src="src/ios/GSUserAgentProtocol.m" />
     </platform>
 </plugin>
