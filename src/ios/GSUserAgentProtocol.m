@@ -30,11 +30,16 @@ static NSString *_userAgent = nil;
     self.connection = [NSURLConnection connectionWithRequest:mutableRequest delegate:self];
 }
 
-- (void) stopLoading {}
+- (void) stopLoading {
+    [self.connection cancel];
+    self.connection = nil;
+}
 
 #pragma mark - NSURLConnection Delegate Methods
 
-- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {}
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
+    [self.client URLProtocol:self didFailWithError:error];
+}
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
     self.response = response;
@@ -43,8 +48,8 @@ static NSString *_userAgent = nil;
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-    [self.client URLProtocol:self didLoadData:data];
     [self.mutableData appendData:data];
+    [self.client URLProtocol:self didLoadData:data];
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
