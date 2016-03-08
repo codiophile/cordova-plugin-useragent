@@ -2,30 +2,40 @@
 
 #import <Cordova/CDVViewController.h>
 #import "GSUserAgentProtocol.h"
+#import <Cordova/CDVPlugin.h>
 
 static NSString *const kUserAgent = @"useragent";
-static NSString *const kUserAgentPrefix = @"useragentprefix";
-static NSString *const kUserAgentPostfix = @"useragentpostfix";
 
-@implementation GSUserAgent
+@implementation GSUserAgent {
+    BOOL agentProtocolRegistered;
+}
 
 - (void)pluginInitialize {
+    agentProtocolRegistered = false;
     if ([self.viewController isKindOfClass:[CDVViewController class]]) {
         CDVViewController *viewController = (CDVViewController *)self.viewController;
-        NSString *userAgent = nil;
-        if (viewController.settings[kUserAgent]) {
-            userAgent = viewController.settings[kUserAgent];
-        } else {
-            userAgent = [self.webView stringByEvaluatingJavaScriptFromString:@"navigator.userAgent"];
-        }
-        if (viewController.settings[kUserAgentPrefix]) {
-            userAgent = [NSString stringWithFormat:@"%@ %@", viewController.settings[kUserAgentPrefix], userAgent];
-        }
-        if (viewController.settings[kUserAgentPostfix]) {
-            userAgent = [NSString stringWithFormat:@"%@ %@", userAgent, viewController.settings[kUserAgentPostfix]];
-        }
+        [self.webViewEngine evaluateJavaScript:@"navigator.userAgent" completionHandler:^(NSString* userAgent, NSError* error) {
+            if (viewController.settings[kUserAgent]) {
+                userAgent = viewController.settings[kUserAgent];
+            }
+            agentProtocolRegistered = true;
+            [GSUserAgentProtocol setUserAgent:userAgent];
+            [NSURLProtocol registerClass:GSUserAgentProtocol.class];
+        }];
+    }
+}
+
+- (void)setUserAgent:(CDVInvokedUrlCommand*)command
+{
+    NSString *userAgent = [command argumentAtIndex:0];
+    NSString *callbackId = command.callbackId;
+    if (agentProtocolRegistered) {
         [GSUserAgentProtocol setUserAgent:userAgent];
-        [NSURLProtocol registerClass:GSUserAgentProtocol.class];
+        CDVPluginResult* pluginResult =[CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
+    } else {
+        CDVPluginResult* pluginResult =[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
     }
 }
 
